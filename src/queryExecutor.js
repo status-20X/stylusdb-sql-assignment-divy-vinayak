@@ -1,8 +1,4 @@
-const {
-    parseSelectQuery,
-    parseInsertQuery,
-    parseDeleteQuery,
-} = require('./queryParser');
+const { parseSelectQuery, parseInsertQuery, parseDeleteQuery } = require('./queryParser');
 const { readCSV, writeCSV } = require('./csvReader');
 
 function performInnerJoin(data, joinData, joinCondition, fields, table) {
@@ -16,9 +12,7 @@ function performInnerJoin(data, joinData, joinCondition, fields, table) {
             .map(joinRow => {
                 return fields.reduce((acc, field) => {
                     const [tableName, fieldName] = field.split('.');
-                    acc[field] = tableName === table
-                        ? mainRow[fieldName]
-                        : joinRow[fieldName];
+                    acc[field] = tableName === table ? mainRow[fieldName] : joinRow[fieldName];
                     return acc;
                 }, {});
             });
@@ -37,9 +31,7 @@ function performLeftJoin(data, joinData, joinCondition, fields, table) {
             return [createResultRow(mainRow, null, fields, table, true)];
         }
 
-        return matchingJoinRows.map(joinRow =>
-            createResultRow(mainRow, joinRow, fields, table, true)
-        );
+        return matchingJoinRows.map(joinRow => createResultRow(mainRow, joinRow, fields, table, true));
     });
 }
 
@@ -50,12 +42,10 @@ function getValueFromRow(row, compoundFieldName) {
 
 function performRightJoin(data, joinData, joinCondition, fields, table) {
     // Cache the structure of a main table row (keys only)
-    const mainTableRowStructure = data.length > 0
-        ? Object.keys(data[0]).reduce((acc, key) => {
-            acc[key] = null; // Set all values to null initially
-            return acc;
-        }, {})
-        : {};
+    const mainTableRowStructure = data.length > 0 ? Object.keys(data[0]).reduce((acc, key) => {
+        acc[key] = null; // Set all values to null initially
+        return acc;
+    }, {}) : {};
 
     return joinData.map(joinRow => {
         const mainRowMatch = data.find(mainRow => {
@@ -72,13 +62,7 @@ function performRightJoin(data, joinData, joinCondition, fields, table) {
     });
 }
 
-function createResultRow(
-    mainRow,
-    joinRow,
-    fields,
-    table,
-    includeAllMainFields
-) {
+function createResultRow(mainRow, joinRow, fields, table, includeAllMainFields) {
     const resultRow = {};
 
     if (includeAllMainFields) {
@@ -91,12 +75,8 @@ function createResultRow(
 
     // Now, add or overwrite with the fields specified in the query
     fields.forEach(field => {
-        const [tableName, fieldName] = field.includes('.')
-            ? field.split('.')
-            : [table, field];
-        resultRow[field] = tableName === table && mainRow
-            ? mainRow[fieldName]
-            : joinRow ? joinRow[fieldName] : null;
+        const [tableName, fieldName] = field.includes('.') ? field.split('.') : [table, field];
+        resultRow[field] = tableName === table && mainRow ? mainRow[fieldName] : joinRow ? joinRow[fieldName] : null;
     });
 
     return resultRow;
@@ -116,43 +96,32 @@ function evaluateCondition(row, clause) {
 
     if (operator === 'LIKE') {
         // Transform SQL LIKE pattern to JavaScript RegExp pattern
-        const regexPattern =
-            '^' + value.replace(/%/g, '.*').replace(/_/g, '.') + '$';
+        const regexPattern = '^' + value.replace(/%/g, '.*').replace(/_/g, '.') + '$';
         const regex = new RegExp(regexPattern, 'i'); // 'i' for case-insensitive matching
         return regex.test(row[field]);
     }
 
     switch (operator) {
-        case '=':
-            return rowValue === conditionValue;
-        case '!=':
-            return rowValue !== conditionValue;
-        case '>':
-            return rowValue > conditionValue;
-        case '<':
-            return rowValue < conditionValue;
-        case '>=':
-            return rowValue >= conditionValue;
-        case '<=':
-            return rowValue <= conditionValue;
-        default:
-            throw new Error(`Unsupported operator: ${operator}`);
+        case '=': return rowValue === conditionValue;
+        case '!=': return rowValue !== conditionValue;
+        case '>': return rowValue > conditionValue;
+        case '<': return rowValue < conditionValue;
+        case '>=': return rowValue >= conditionValue;
+        case '<=': return rowValue <= conditionValue;
+        default: throw new Error(`Unsupported operator: ${operator}`);
     }
 }
 
 // Helper function to parse value based on its apparent type
 function parseValue(value) {
+
     // Return null or undefined as is
     if (value === null || value === undefined) {
         return value;
     }
 
     // If the value is a string enclosed in single or double quotes, remove them
-    if (
-        typeof value === 'string' &&
-        ((value.startsWith("'") && value.endsWith("'")) ||
-            (value.startsWith('"') && value.endsWith('"')))
-    ) {
+    if (typeof value === 'string' && ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"')))) {
         value = value.substring(1, value.length - 1);
     }
 
@@ -174,9 +143,7 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
         // Initialize group in results if it doesn't exist
         if (!groupResults[groupKey]) {
             groupResults[groupKey] = { count: 0, sums: {}, mins: {}, maxes: {} };
-            groupByFields.forEach(
-                field => (groupResults[groupKey][field] = row[field])
-            );
+            groupByFields.forEach(field => groupResults[groupKey][field] = row[field]);
         }
 
         // Aggregate calculations
@@ -189,20 +156,13 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
 
                 switch (aggFunc.toUpperCase()) {
                     case 'SUM':
-                        groupResults[groupKey].sums[aggField] =
-                            (groupResults[groupKey].sums[aggField] || 0) + value;
+                        groupResults[groupKey].sums[aggField] = (groupResults[groupKey].sums[aggField] || 0) + value;
                         break;
                     case 'MIN':
-                        groupResults[groupKey].mins[aggField] = Math.min(
-                            groupResults[groupKey].mins[aggField] || value,
-                            value
-                        );
+                        groupResults[groupKey].mins[aggField] = Math.min(groupResults[groupKey].mins[aggField] || value, value);
                         break;
                     case 'MAX':
-                        groupResults[groupKey].maxes[aggField] = Math.max(
-                            groupResults[groupKey].maxes[aggField] || value,
-                            value
-                        );
+                        groupResults[groupKey].maxes[aggField] = Math.max(groupResults[groupKey].maxes[aggField] || value, value);
                         break;
                     // Additional aggregate functions can be added here
                 }
@@ -214,7 +174,7 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
     return Object.values(groupResults).map(group => {
         // Construct the final grouped object based on required fields
         const finalGroup = {};
-        groupByFields.forEach(field => (finalGroup[field] = group[field]));
+        groupByFields.forEach(field => finalGroup[field] = group[field]);
         aggregateFunctions.forEach(func => {
             const match = /(\w+)\((\*|\w+)\)/.exec(func);
             if (match) {
@@ -243,19 +203,8 @@ function applyGroupBy(data, groupByFields, aggregateFunctions) {
 
 async function executeSELECTQuery(query) {
     try {
-        const {
-            fields,
-            table,
-            whereClauses,
-            joinType,
-            joinTable,
-            joinCondition,
-            groupByFields,
-            hasAggregateWithoutGroupBy,
-            orderByFields,
-            limit,
-            isDistinct,
-        } = parseSelectQuery(query);
+
+        const { fields, table, whereClauses, joinType, joinTable, joinCondition, groupByFields, hasAggregateWithoutGroupBy, orderByFields, limit, isDistinct } = parseSelectQuery(query);
         let data = await readCSV(`${table}.csv`);
 
         // Perform INNER JOIN if specified
@@ -263,25 +212,13 @@ async function executeSELECTQuery(query) {
             const joinData = await readCSV(`${joinTable}.csv`);
             switch (joinType.toUpperCase()) {
                 case 'INNER':
-                    data = performInnerJoin(
-                        data,
-                        joinData,
-                        joinCondition,
-                        fields,
-                        table
-                    );
+                    data = performInnerJoin(data, joinData, joinCondition, fields, table);
                     break;
                 case 'LEFT':
                     data = performLeftJoin(data, joinData, joinCondition, fields, table);
                     break;
                 case 'RIGHT':
-                    data = performRightJoin(
-                        data,
-                        joinData,
-                        joinCondition,
-                        fields,
-                        table
-                    );
+                    data = performRightJoin(data, joinData, joinCondition, fields, table);
                     break;
                 default:
                     throw new Error(`Unsupported JOIN type: ${joinType}`);
@@ -289,9 +226,7 @@ async function executeSELECTQuery(query) {
         }
         // Apply WHERE clause filtering after JOIN (or on the original data if no join)
         let filteredData = whereClauses.length > 0
-            ? data.filter(row =>
-                whereClauses.every(clause => evaluateCondition(row, clause))
-            )
+            ? data.filter(row => whereClauses.every(clause => evaluateCondition(row, clause)))
             : data;
 
         let groupResults = filteredData;
@@ -308,27 +243,16 @@ async function executeSELECTQuery(query) {
                             result[field] = filteredData.length;
                             break;
                         case 'SUM':
-                            result[field] = filteredData.reduce(
-                                (acc, row) => acc + parseFloat(row[aggField]),
-                                0
-                            );
+                            result[field] = filteredData.reduce((acc, row) => acc + parseFloat(row[aggField]), 0);
                             break;
                         case 'AVG':
-                            result[field] =
-                                filteredData.reduce(
-                                    (acc, row) => acc + parseFloat(row[aggField]),
-                                    0
-                                ) / filteredData.length;
+                            result[field] = filteredData.reduce((acc, row) => acc + parseFloat(row[aggField]), 0) / filteredData.length;
                             break;
                         case 'MIN':
-                            result[field] = Math.min(
-                                ...filteredData.map(row => parseFloat(row[aggField]))
-                            );
+                            result[field] = Math.min(...filteredData.map(row => parseFloat(row[aggField])));
                             break;
                         case 'MAX':
-                            result[field] = Math.max(
-                                ...filteredData.map(row => parseFloat(row[aggField]))
-                            );
+                            result[field] = Math.max(...filteredData.map(row => parseFloat(row[aggField])));
                             break;
                         // Additional aggregate functions can be handled here
                     }
@@ -356,6 +280,7 @@ async function executeSELECTQuery(query) {
             }
             return groupResults;
         } else {
+
             // Order them by the specified fields
             let orderedResults = groupResults;
             if (orderByFields) {
@@ -381,14 +306,7 @@ async function executeSELECTQuery(query) {
             // Remove duplicates if specified
             let distinctResults = finalResults;
             if (isDistinct) {
-                distinctResults = [
-                    ...new Map(
-                        finalResults.map(item => [
-                            fields.map(field => item[field]).join('|'),
-                            item,
-                        ])
-                    ).values(),
-                ];
+                distinctResults = [...new Map(finalResults.map(item => [fields.map(field => item[field]).join('|'), item])).values()];
             }
 
             let limitResults = distinctResults;
@@ -397,6 +315,8 @@ async function executeSELECTQuery(query) {
             }
 
             return limitResults;
+
+
         }
     } catch (error) {
         throw new Error(`Error executing query: ${error.message}`);
@@ -425,7 +345,7 @@ async function executeINSERTQuery(query) {
     // Save the updated data back to the CSV file
     await writeCSV(`${table}.csv`, data); // Implement writeCSV function
 
-    return { message: 'Row inserted successfully.' };
+    return { message: "Row inserted successfully." };
 }
 
 async function executeDELETEQuery(query) {
@@ -434,9 +354,7 @@ async function executeDELETEQuery(query) {
 
     if (whereClauses.length > 0) {
         // Filter out the rows that meet the where clause conditions
-        data = data.filter(
-            row => !whereClauses.every(clause => evaluateCondition(row, clause))
-        );
+        data = data.filter(row => !whereClauses.every(clause => evaluateCondition(row, clause)));
     } else {
         // If no where clause, clear the entire table
         data = [];
@@ -445,7 +363,8 @@ async function executeDELETEQuery(query) {
     // Save the updated data back to the CSV file
     await writeCSV(`${table}.csv`, data);
 
-    return { message: 'Rows deleted successfully.' };
+    return { message: "Rows deleted successfully." };
 }
+
 
 module.exports = { executeSELECTQuery, executeINSERTQuery, executeDELETEQuery };
