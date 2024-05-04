@@ -1,26 +1,26 @@
-const parseQuery = require('./queryParser');
-const readCSV = require('./csvReader');
+function parseQuery(query) {
+    const selectRegex = /SELECT (.+?) FROM (.+?)(?: WHERE (.*))?$/i;
+    const match = query.match(selectRegex);
 
-async function executeSELECTQuery(query) {
-    const { fields, table, whereClause } = parseQuery(query);
-    const data = await readCSV(`${table}.csv`);
-    
-    // Filtering based on WHERE clause
-    const filteredData = whereClause
-        ? data.filter(row => {
-            const [field, value] = whereClause.split('=').map(s => s.trim());
-            return row[field] === value;
-        })
-        : data;
+    if (match) {
+        const [, fields, table, whereString] = match;
+        const whereClauses = whereString ? parseWhereClause(whereString) : [];
+        return {
+            fields: fields.split(',').map(field => field.trim()),
+            table: table.trim(),
+            whereClauses
+        };
+    } else {
+        throw new Error('Invalid query format');
+    }
+}
 
-    // Selecting the specified fields
-    return filteredData.map(row => {
-        const selectedRow = {};
-        fields.forEach(field => {
-            selectedRow[field] = row[field];
-        });
-        return selectedRow;
+function parseWhereClause(whereString) {
+    const conditions = whereString.split(/ AND | OR /i);
+    return conditions.map(condition => {
+        const [field, operator, value] = condition.split(/\s+/);
+        return { field, operator, value };
     });
 }
 
-module.exports = executeSELECTQuery;
+module.exports = parseQuery;
